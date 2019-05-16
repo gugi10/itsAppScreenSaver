@@ -12,11 +12,12 @@ public class ScreenSaveEditor : MonoBehaviour {
     void Start() {
         if (!EditorApplication.isPlaying && !GetComponentInChildren<Canvas>()) {
             controller = GetComponent<ScreenSaverController>();
-            AddRawImage();
+            gameObject.name = "ScreenSaver";
+            InitRawImage();
         }
     }
 
-    void AddRawImage() {
+    void InitRawImage() {
         GameObject newCanvasObj = new GameObject();
         SetupCanvas(newCanvasObj.AddComponent<Canvas>());
         newCanvasObj.transform.SetParent(transform);

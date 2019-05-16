@@ -38,6 +38,7 @@ public class ScreenSaverController : MonoBehaviour {
     }
 
     void Init() {
+        DontDestroyOnLoad(this);
         videoPlayer = GetComponent<VideoPlayer>();
         audioSource = GetComponent<AudioSource>();
         HideImage();
