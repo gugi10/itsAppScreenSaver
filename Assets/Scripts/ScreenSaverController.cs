@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Video;
 using UnityEngine.UI;
-[RequireComponent(typeof(VideoPlayer), typeof(AudioSource), typeof(ScreenSaveEditor))]
+using System.IO;
+[RequireComponent(typeof(VideoPlayer), typeof(AudioSource))]
 public class ScreenSaverController : MonoBehaviour {
 
     public float timeout = 1f;
@@ -11,14 +12,34 @@ public class ScreenSaverController : MonoBehaviour {
 
     [Header("Configurations")]
     [SerializeField] bool screenSleep = false;
-    [SerializeField] bool playVideoWithSound = false;
+    [SerializeField] bool playVideoWithSound = true;
 
     AudioSource audioSource;
     VideoPlayer videoPlayer;
     float timeSinceLastAction;
+    List<string> videoUrls = new List<string>();
+    int indexOfClipPlayed;
+
+    public void ShowImage() {
+        rawImage.color = new Color(255, 255, 255, 255);
+        rawImage.gameObject.SetActive(true);
+    }
+
+    public void HideImage() {
+        rawImage.color = new Color(255, 255, 255, 0);
+        rawImage.gameObject.SetActive(false);
+    }
 
     void Awake() {
         Init();
+    }
+
+    void OnEnable() {
+        videoPlayer.loopPointReached += PrepareNextVideoFromUrls;
+    }
+
+    void OnDisable() {
+        videoPlayer.loopPointReached -= PrepareNextVideoFromUrls;
     }
 
     void Update() {
@@ -28,6 +49,7 @@ public class ScreenSaverController : MonoBehaviour {
             }
             ResetTimer();
         }
+
         if (timeSinceLastAction > timeout && !videoPlayer.isPlaying) {
             StartCoroutine(PlayVideoCoroutine());
         }
@@ -37,16 +59,26 @@ public class ScreenSaverController : MonoBehaviour {
 
     }
 
+    void Reset() {
+        ScreenSaverInitializer initalizer = gameObject.AddComponent<ScreenSaverInitializer>();
+        initalizer.SetUp();
+        DestroyImmediate(initalizer);
+    }
+
     void Init() {
         DontDestroyOnLoad(this);
         videoPlayer = GetComponent<VideoPlayer>();
         audioSource = GetComponent<AudioSource>();
+
+        LoadVideosFromPath(ScreenSaverConfigurations.videosPath);
+        PrepareNextVideoFromUrls(videoPlayer);
         HideImage();
         timeout = InputFile.Get<float>("timeout");
-        if (screenSleep) {
+
+        if (!ScreenSaverConfigurations.screenSleep) {
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
         }
-        if (playVideoWithSound) {
+        if (ScreenSaverConfigurations.playWithSound) {
             PrepareAudio();
         }
         videoPlayer.Prepare();
@@ -72,8 +104,24 @@ public class ScreenSaverController : MonoBehaviour {
         StopCoroutine(PlayVideoCoroutine());
     }
 
+    void PrepareNextVideoFromUrls(VideoPlayer vp) {
+        if(indexOfClipPlayed < videoUrls.Count) {
+            vp.url = videoUrls[indexOfClipPlayed];
+        }
+        else {
+            ResetClipList();
+            vp.url = videoUrls[indexOfClipPlayed];
+        }
+        indexOfClipPlayed++;
+    }
+
     void ResetTimer() {
         timeSinceLastAction = 0;
+        PrepareNextVideoFromUrls(videoPlayer);
+    }
+    
+    void ResetClipList() {
+        indexOfClipPlayed = 0;
     }
 
     void PrepareAudio() {
@@ -81,13 +129,14 @@ public class ScreenSaverController : MonoBehaviour {
         videoPlayer.SetTargetAudioSource(0, audioSource);
     }
 
-    public void ShowImage() {
-        rawImage.color = new Color(255, 255, 255, 255);
-        rawImage.gameObject.SetActive(true);
+    void LoadVideosFromPath(string path) {
+        DirectoryInfo directory = new DirectoryInfo(path);
+        FileInfo[] fileInfo = directory.GetFiles("*.mp4");
+        foreach (FileInfo file in fileInfo) {
+            videoUrls.Add(path + file.Name);
+        }
     }
 
-    public void HideImage() {
-        rawImage.color = new Color(255, 255, 255, 0);
-        rawImage.gameObject.SetActive(false);
-    }
+
+
 }

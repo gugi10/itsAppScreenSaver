@@ -4,13 +4,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 
-[ExecuteInEditMode]
-public class ScreenSaveEditor : MonoBehaviour {
-#if(UNITY_EDITOR)
+
+public class ScreenSaverInitializer : MonoBehaviour {
     ScreenSaverController controller;
 
-    void Start() {
-        if (!EditorApplication.isPlaying && !GetComponentInChildren<Canvas>()) {
+
+    public void SetUp() {
+        if (!GetComponentInChildren<Canvas>()) {
             controller = GetComponent<ScreenSaverController>();
             gameObject.name = "ScreenSaver";
             InitRawImage();
@@ -21,13 +21,14 @@ public class ScreenSaveEditor : MonoBehaviour {
         GameObject newCanvasObj = new GameObject();
         SetupCanvas(newCanvasObj.AddComponent<Canvas>());
         newCanvasObj.transform.SetParent(transform);
-        GameObject newRawImage = new GameObject();
-        newRawImage.AddComponent<RawImage>();
+        GameObject newGameObjectRaw = new GameObject();
+        RawImage newRawImage = newGameObjectRaw.AddComponent<RawImage>();
         newRawImage.transform.SetParent(newCanvasObj.transform);
         controller.rawImage = newRawImage.GetComponent<RawImage>();
-        Rename(newCanvasObj, newRawImage);
+        Rename(newCanvasObj, newRawImage.gameObject);
         SetupCanvas(newCanvasObj.GetComponent<Canvas>());
         SetupRawImageRect(newRawImage.GetComponent<RectTransform>());
+        DestroyImmediate(this);
 
     }
 
@@ -49,5 +50,5 @@ public class ScreenSaveEditor : MonoBehaviour {
         canvasGameObject.name = "Canvas";
         rawImageObject.name = "RawImage";
     }
-#endif
+
 }
